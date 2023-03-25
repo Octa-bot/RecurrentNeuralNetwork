@@ -101,16 +101,16 @@ layers = [ ...
 %     Mezclar los datos en cada época.
 %     Sin salida detallada del proceso de entrenamiento (Verbose = 0).
 %     Gráficos de progreso del entrenamiento en tiempo real.
-nadam = nadamOptimize('LearnRate', 0.001, 'GradientDecayFactor', 0.9, 'SquaredGradientDecayFactor', 0.999);
-options = trainingOptions('Solver', nadam ,...
+% nadam = nadamOptimize('LearnRate', 0.001, 'GradientDecayFactor', 0.9, 'SquaredGradientDecayFactor', 0.999);
+options = trainingOptions( 'adam' ,...
     'MaxEpochs', 100, ...
-    'MiniBatchSize', 100, ...
+    'MiniBatchSize', 500, ...
     'InitialLearnRate', 0.001, ...
     'LearnRateSchedule', 'piecewise', ...
     'LearnRateDropFactor', 0.5, ...
-    'LearnRateDropPeriod', 50, ...
+    'LearnRateDropPeriod', 5, ...
     'GradientThreshold', 0.2, ...
-    'Shuffle', 'every-epoch', ...
+    'Shuffle', 'never', ...
     'Verbose', 0, ...
     'Plots', 'training-progress');
 
@@ -131,17 +131,21 @@ mse = mean(cellfun(@(x, y) mean((x - y).^2), YPred, Y_test));
 fprintf("El error cuadrático medio en el conjunto de prueba es: %f", mse);
 
 % Visualizar las señales de ECG originales, ruidosas y filtradas
-num_signals = 1;
+num_signals = 3;
+signal = size(ecg_resampled,2);
 for i = 1:num_signals
-    YPred = predict(net, validation);
-%     Ypred = cell2mat(Ypred);
-    YPred = double(YPred');
+    YPred = predict(net, validation((signal*(i-1)+1):(signal*i)));
+    YPRED = num2cell(YPred,1);
+    YPred = double(YPred);
+    VAL2 = num2cell(validation2, 1);
     figure;
+    mse = mean(cellfun(@(x, y) mean((x - y).^2), YPRED,VAL2((signal*(i-1)+1):(signal*i))));
+    sgtitle(sprintf('Error de validacion #%i = %f', i, mse));
     subplot(3, 1, 1);
-    plot(validation2);
+    plot(validation2((signal*(i-1)+1):(signal*i)));
     title(sprintf('Señal filtrada original %d', i));
     subplot(3, 1, 2);
-    plot(validation);
+    plot(validation((signal*(i-1)+1):(signal*i)));
     title(sprintf('Señal ruidosa %d', i));
     subplot(3, 1, 3);
     plot(YPred);
